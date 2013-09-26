@@ -1,0 +1,163 @@
+centos ice
+
+#cd /etc/yum.repos.d/
+#wget http://download.zeroc.com/Ice/3.5/el6/zeroc-ice-amzn.repo
+#yum install ice* db53* mcpp-devel
+#yum list ice* db53* mcpp-devel
+
+确认机子是否安装g++，如果没有，则安装：
+#yum install gcc-c++ libstdc++-devel
+
+
+#cd /root
+#mkdir ice_demo
+#cd ice_demo
+#vi Printer.ice
+内容为：
+module Demo { 
+interface Printer { 
+void printString(string s); 
+}; 
+};
+
+#slice2cpp Printer.ice
+#vi Server.cpp
+内容为：
+#include <Ice/Ice.h>
+#include <Printer.h>
+
+using namespace std;
+using namespace Demo;
+
+class PrinterI:public Printer{
+        public:
+        virtual void printString(const string& s,const Ice::Current&);
+};
+
+void PrinterI::printString(const string& s,const Ice::Current&)
+{
+        cout <<s<<endl;
+}
+
+int main(int argc,char* argv[])
+{
+        int status = 0;
+        Ice::CommunicatorPtr ic;
+        try{
+                ic = Ice::initialize(argc,argv);
+                Ice::ObjectAdapterPtr adapter = ic->createObjectAdapterWithEndpoints("simplePrinterAdapter","default -p 10000");
+                Ice::ObjectPtr object = new PrinterI;
+                adapter->add(object, ic->stringToIdentity("SimplePrinter"));
+                adapter->activate();
+                ic->waitForShutdown();
+        } catch(const Ice::Exception& e){
+                cerr <<e<<endl;
+                status = 1;
+        } catch(const char* msg){
+                cerr <<msg<<endl;
+                status = 1;
+        }
+        if(ic){
+                try{
+                        ic->destroy();
+                } catch(const Ice::Exception& e){
+                        cerr <<e<<endl;
+                        status = 1;
+                }
+        }
+        return status;
+}
+
+#c++ -I. -I$ICE_HOME/include -c Printer.cpp Server.cpp
+#c++ -o server Printer.o Server.o \-L$ICE_HOME/lib -lIce -lIceUtil
+
+
+#slice2php Printer.ice
+#vi Client.php
+<?php
+require 'Ice.php';
+require 'Printer.php';
+
+$ic = null;
+try{
+        $ic = Ice_initialize();
+        $base = $ic->stringToProxy("SimplePrinter:default -p 10000");
+        $printer = Demo_PrinterPrxHelper::checkedCast($base);
+        if(!$printer)
+                throw new RuntimeException("Invalid Proxy");
+
+        $printer->printString("Hello World!");
+} catch(Exception $ex){
+        echo $ex;
+}
+
+if($ic){
+        try{
+                $ic->destroy();
+        } catch(Exception $ex){
+                echo $ex;
+        }
+}
+
+
+打开一个终端运行 #./server
+打开另一个终端运行 php Client.php
+发现每运行一次Client.php,第一个终端就打出一个Hello World. ICE 运行成功.
+
+
+centos 安装中间件ice
+http://www.phpyu.com/?post=66
+http://www.cnblogs.com/yjf512/archive/2011/06/07/2074554.html
+
+
+
+
+php 客户端安装
+#cd /etc/yum.repos.d/
+#wget http://download.zeroc.com/Ice/3.5/el6/zeroc-ice-amzn.repo
+#yum install ice-php*
+
+
+error:
+Fatal error: Call to undefined function icephp_defineclass() in Ice.php on line 90
+在php.ini 开启: extension = "IcePHP.so"
+extension=/usr/lib/php/modules/IcePHP.so
+
+
+That function is supplied by the Ice extension (IcePHP.so), so the error message is an indication that the extension isn't being loaded.
+http://www.zeroc.com/forums/help-center/5128-ice-3-4-x-php5-3-3-rhel4-cpanel.html
+
+It seems that ice PHP extension hasn't been loaded, can you check step 6, to see if that is the case. 
+http://www.zeroc.com/forums/help-center/5486-fatal-error-call-undefined-function-icephp_defineclass.html
+
+
+
+服务端采用C++实现,客户端可以采用java实现。
+我们已Java,C++作为Ice例子原形，我们只需要运行C++服务端程序，在运行Java客户端程序就可以实现Java和C++互联互通。
+目前没有我们所有实例都是基于同一台机器的，实际情况服务端和客户端会分布在不同机器上。这种情况下，我们需要如下修改：
+"default -p 10000" 采用 "tcp -h server1 -p port" 替代
+服务端所在主机IP: 10.0.68.18 ，端口:10080
+所以就修改为：tcp -h 10.0.68.18 -p 10080,再重新编译就可以了
+客户端也同样修改就可以了
+如果要监听多个端口，我么可以如下修改：
+服务端： tcp -h host -p port1:tcp -h host -p port2形式
+例：
+服务端 ：
+tcp -h 10.0.68.18 -p 10080: tcp -h 10.0.68.18 -p 10081
+客户端：可以监听两个，也可以监听一个
+
+
+
+
+
+QA:
+http://www.zeroc.com/forums/help-center/5128-ice-3-4-x-php5-3-3-rhel4-cpanel.html
+
+
+
+在ICE客户端中如何定位服务器端的位置(即如何寻找代理)   
+http://leishiyuning.blog.163.com/blog/static/6615753520086225594869/
+http://www.cppblog.com/klsmlzm/archive/2005/12/09/1651.html
+
+ICE客户端定位Serant的位置详解
+http://blog.csdn.net/bruce_wang_janet/article/details/6247112

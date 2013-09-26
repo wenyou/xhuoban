@@ -1,0 +1,11 @@
+1. 显示环境变量HOME
+$ echo $HOME
+/home/redbooks
+
+2. 设置一个新的环境变量hello
+$ export HELLO="Hello!"
+$ echo $HELLO
+Hello!
+
+3. 使用env命令显示所有的环境变量
+$ env

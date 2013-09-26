@@ -1,0 +1,45 @@
+下载并安装LNMP一键安装包
+CentOS系统下执行：
+wget -c http://soft.vpser.net/lnmp/lnmp1.0-full.tar.gz && 
+tar zxvf lnmp1.0-full.tar.gz && 
+cd lnmp1.0-full && 
+./centos.sh
+
+vi ./centos.sh  把php5.3.17 改成 php-5.4.12
+http://cn2.php.net/get/php-5.4.12.tar.gz/from/this/mirror
+
+升级PHP
+进入lnmp1.0安装目录：
+#./upgrade_php.sh
+输入要升级的版本，如：5.4.12
+
+重新编译PHP后，如果你使用了eAccelerator，那么你还需要重新编译安装eAccelerator，这个也是直接执行LNMP的eAccelerator安装脚本就可以了。
+#./eaccelerator.sh
+
+
+LNMP升级Nginx，PHP，MYSQL的方法
+http://www.myhack58.com/Article/sort099/sort0102/2013/39006.htm
+
+
+
+升级PHP用来解决，扩展与PHP版本不对称问题，如：
+Warning:  PHP Startup: memcache: Unable to initialize module Module compiled with module API=20090626 PHP    compiled with module API=20060613
+
+Warning:  PHP Startup: memcache: Unable to initialize Ice Module compiled with module API=20090626 PHP    compiled with module API=20060613
+
+
+
+如何卸载lnmp
+killall nginx * //终止nginx进程
+/etc/init.d/mysql stop *//关闭mysql
+killall mysqld *//终止mysql进程
+/usr/local/php/sbin/php-fpm stop *//关闭php
+killall php-cgi *//终止php-cgi进程
+rm -rf /usr/local/php *//删除php文件
+rm -rf /usr/local/nginx *//删除nginx文件
+rm -rf /usr/local/mysql *//删除mysql文件
+rm -rf /usr/local/zend *//删除zend文件
+rm /etc/my.cnf *//删除配置文件
+rm /etc/init.d/mysql *//删除mysql文件
+rm /root/vhost.sh *//删除配置虚拟主机脚本
+rm /root/lnmp *//删除lnmp文件夹
